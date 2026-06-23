@@ -1,0 +1,4 @@
+*.o
+cornell_gpu
+*.ppm
+imgui.ini

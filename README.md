@@ -18,6 +18,15 @@ Implementación en Python (CPU / NumPy) de los principales algoritmos de ilumina
 | **Mapeo de Fotones** | Dos pasadas con kd-tree | Jensen (1996) |
 | **Tiempo Real** | SSAO + Luces Puntuales Virtuales | Keller (1997) |
 
+Además, `realtime_gpu/` contiene una **demo interactiva acelerada por GPU**
+(shaders GLSL vía ModernGL) que renderiza la misma Caja de Cornell en vivo,
+permitiendo alternar entre Local, Ray Tracing, Path Tracing progresivo,
+Tiempo real (Local + AO), Radiosidad (GI difusa determinista) y Mapeo de
+fotones (vidrio refractivo + cáustica aproximada), con una mini interfaz
+(Dear ImGui) para ajustar los parámetros de cada algoritmo. Ver
+[`docs/realtime_gpu_justificacion.md`](docs/realtime_gpu_justificacion.md)
+para la justificación de las herramientas usadas.
+
 ---
 
 ## Requisitos previos
@@ -92,11 +101,21 @@ Ilum-Global-G67/
 │   └── contrast_local_global.py ← figura local vs. global lado a lado
 ├── outputs/                     ← imágenes PNG generadas (se crea automáticamente)
 ├── docs/
-│   └── neuronal/
-│       └── tabla_metricas.md    ← métricas NeRF y 3D Gaussian Splatting
-├── main.py                      ← punto de entrada con CLI
+│   ├── neuronal/
+│   │   └── tabla_metricas.md    ← métricas NeRF y 3D Gaussian Splatting
+│   └── realtime_gpu_justificacion.md  ← por qué ModernGL/GLSL/imgui_bundle
+├── realtime_gpu/                ← demo interactiva en GPU (shaders GLSL)
+│   ├── shaders/
+│   │   ├── quad.vert
+│   │   ├── cornell.frag         ← Local/RayTracing/PathTracing/AO en un shader
+│   │   └── present.frag         ← tone mapping (Reinhard + gamma)
+│   ├── camera.py                ← cámara orbital (mouse)
+│   └── app.py                   ← ModernGL + Dear ImGui (hello_imgui)
+├── main.py                      ← punto de entrada con CLI (renderers offline)
+├── run_realtime_gpu.py          ← punto de entrada de la demo en GPU
 ├── path_tracer_cornell.py       ← path tracer original autónomo (referencia)
-└── requirements.txt
+├── requirements.txt             ← dependencias de los renderers offline (CPU)
+└── requirements-realtime.txt    ← dependencias de la demo en GPU
 ```
 
 ---
@@ -175,6 +194,63 @@ python main.py --help
 | Mapeo de Fotones | ~15–30 min | 50k fotones globales + 100k cáusticos |
 
 > **Consejo para demos rápidas:** usar `--width 80 --height 80 --spp 4`
+
+---
+
+## Demo interactiva en GPU (tiempo real) -- C++ / OpenGL (recomendada)
+
+`cornell_gpu_cpp/` es la versión **recomendada** de la demo: C++ + OpenGL
+3.3 + GLFW + ImGui (sin Python), con la arquitectura y los parámetros de
+escena de proyectos de referencia en GitHub (caja, reflectancias y emisión
+de luz **canónicas** de la Cornell Box, no valores ajustados a ojo). Ver
+[`cornell_gpu_cpp/README.md`](cornell_gpu_cpp/README.md) para compilación,
+ejecución y controles.
+
+```bash
+cd cornell_gpu_cpp && make && ./cornell_gpu
+```
+
+## Demo interactiva en GPU (tiempo real) -- Python / ModernGL (alternativa)
+
+`realtime_gpu/` es la primera versión, en Python, y se mantiene como
+alternativa si no se quiere compilar C++. Renderiza la misma escena
+directamente en un fragment shader (GLSL), ejecutado en paralelo por la
+GPU, en lugar de en CPU/NumPy. Permite alternar en vivo entre los modelos y
+ajustar sus parámetros desde una mini interfaz (Dear ImGui).
+
+### Instalación (entorno separado, requiere GPU y entorno gráfico)
+
+```bash
+pip install -r requirements-realtime.txt
+```
+
+### Ejecución
+
+```bash
+python run_realtime_gpu.py
+```
+
+**Controles:** click (izquierdo o derecho) + arrastrar fuera del panel para
+orbitar la cámara, rueda del mouse para hacer zoom. Si el arrastre no
+responde bien en tu sistema (puede pasar en algunos entornos Wayland/X11),
+usa las **flechas del teclado** para orbitar y **+/-** para zoom; el panel
+muestra en vivo los valores de yaw/pitch/distancia para confirmar que el
+control esta respondiendo.
+
+El panel permite elegir el modelo de iluminación (Local, Ray Tracing, Path
+Tracing, Tiempo real + AO, Radiosidad, Mapeo de fotones), la resolución de
+render (hasta 1280×1280), los rebotes/muestras, la intensidad de luz/
+ambiente, la exposición y el material de la segunda esfera (difusa, espejo
+o vidrio refractivo). En el modo Path Tracing se muestra el número de
+muestras acumuladas y cómo disminuye el ruido al acumular más cuadros
+(sección 3.3 y Anexo A.5 del informe); en Radiosidad se aprecia la misma
+interreflexión difusa pero sin ruido (muestreo determinista); en Mapeo de
+fotones, seleccionando vidrio en la esfera, se ve una cáustica aproximada
+proyectada en el piso.
+
+Ver [`docs/realtime_gpu_justificacion.md`](docs/realtime_gpu_justificacion.md)
+para por qué se eligieron ModernGL, GLSL y `imgui_bundle` en lugar de un
+motor de juego o una app web.
 
 ---
 

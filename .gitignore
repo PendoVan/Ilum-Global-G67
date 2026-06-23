@@ -220,3 +220,7 @@ __marimo__/
 #Imágenes
 *.png
 *.hdr
+
+# Dear ImGui / hello_imgui layout cache (demo realtime_gpu/)
+imgui.ini
+*.ini

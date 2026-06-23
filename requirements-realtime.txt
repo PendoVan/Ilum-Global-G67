@@ -1,0 +1,9 @@
+# Dependencias de la demo interactiva en GPU (realtime_gpu/).
+# Independiente de requirements.txt (que solo cubre los renderers offline en CPU).
+# Ver docs/realtime_gpu_justificacion.md para la justificacion de estas herramientas.
+
+moderngl>=5.8       # bindings de OpenGL moderno (programable, shaders GLSL) sobre la GPU
+glfw>=2.6            # creacion de ventana y contexto OpenGL multiplataforma
+imgui_bundle>=1.6    # Dear ImGui (mini interfaz inmediata) + runner de aplicacion (hello_imgui)
+PyOpenGL>=3.1        # requerido por el backend de renderizado de imgui_bundle
+numpy>=1.24
